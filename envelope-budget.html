@@ -546,7 +546,7 @@
       const b = document.createElement("div");
       b.className = "banner warn";
       b.innerHTML = "&#9888; " + un.length + " expense" + (un.length > 1 ? "s" : "") +
-        " still need assigning (" + fmt(un.reduce((s, x) => s + x.amountC, 0)) +
+        (un.length > 1 ? " still need" : " still needs") + " assigning (" + fmt(un.reduce((s, x) => s + x.amountC, 0)) +
         "). <a href='#' id='goto-assign'>Assign now</a>";
       warn.appendChild(b);
       b.querySelector("#goto-assign").addEventListener("click", (e) => { e.preventDefault(); showView("expenses"); });
