@@ -81,6 +81,12 @@ uploaded anywhere. That also means clearing your browser data will erase it, so:
 - **Backup** tab → **Download backup (.json)** saves a file you can keep.
 - **Restore from backup** loads it back, on this or another computer.
 
+**Moving to a new browser or after clearing data?** When you open the app and it's
+empty, a **Welcome** prompt appears at the top with a **Restore a backup** button —
+click it, pick your `.json` file, and everything comes back. (You can also restore
+any time from the **Backup** tab.) Restoring replaces whatever is currently in that
+browser with the contents of the backup file.
+
 ## Sample CSV
 
 `sample-expenses.csv` is included so you can practice the import step. It's a

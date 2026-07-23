@@ -243,6 +243,17 @@
 </header>
 
 <main>
+  <!-- ============ FIRST RUN / RESTORE ============ -->
+  <div class="card hidden" id="first-run" style="border-color: color-mix(in srgb, var(--accent) 30%, transparent);">
+    <h2>Welcome 👋</h2>
+    <p class="sub">Nothing's saved in this browser yet. If you have a backup file from before (or from another computer), load it here — otherwise start fresh.</p>
+    <div class="row">
+      <button class="btn primary" id="fr-restore">Restore a backup (.json)</button>
+      <button class="btn" id="fr-new">Start fresh — add envelopes</button>
+      <button class="btn ghost" id="fr-sample">Load sample data</button>
+    </div>
+  </div>
+
   <!-- ============ PAYDAY ============ -->
   <section class="view active" id="view-payday">
     <div class="card">
@@ -522,7 +533,12 @@
   }
 
   // ---------- rendering ----------
-  function renderAll() { renderPayday(); renderEnvelopes(); renderExpenses(); renderHistory(); save(); }
+  function renderAll() { renderPayday(); renderEnvelopes(); renderExpenses(); renderHistory(); updateFirstRun(); save(); }
+
+  function updateFirstRun() {
+    const empty = !state.envelopes.length && !state.expenses.length && !state.settlements.length;
+    document.getElementById("first-run").classList.toggle("hidden", !empty);
+  }
 
   let withdrawMode = "spent";
 
@@ -1062,6 +1078,11 @@
   document.getElementById("btn-export").addEventListener("click", exportData);
   document.getElementById("import-file").addEventListener("change", e => { if (e.target.files[0]) importData(e.target.files[0]); });
   document.getElementById("btn-sample").addEventListener("click", loadSample);
+
+  // first-run welcome shortcuts
+  document.getElementById("fr-restore").addEventListener("click", () => document.getElementById("import-file").click());
+  document.getElementById("fr-new").addEventListener("click", () => showView("envelopes"));
+  document.getElementById("fr-sample").addEventListener("click", loadSample);
   document.getElementById("btn-reset").addEventListener("click", resetAll);
 
   renderAll();
