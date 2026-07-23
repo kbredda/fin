@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Envelope Budget Tracker</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --panel: #ffffff;
+    --panel-2: #fafbfc;
+    --ink: #1b1f24;
+    --muted: #5c6773;
+    --line: #e3e7ec;
+    --accent: #2f6f4f;
+    --accent-ink: #ffffff;
+    --accent-soft: #e6f2ec;
+    --danger: #b23b3b;
+    --warn: #9a6b00;
+    --warn-soft: #fbf3e0;
+    --pos: #2f6f4f;
+    --neg: #b23b3b;
+    --shadow: 0 1px 2px rgba(0,0,0,.05), 0 6px 20px rgba(0,0,0,.04);
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1317;
+      --panel: #171c22;
+      --panel-2: #1c222a;
+      --ink: #e8ecf1;
+      --muted: #9aa6b2;
+      --line: #2a323b;
+      --accent: #4caf82;
+      --accent-ink: #0b0f12;
+      --accent-soft: #16281f;
+      --danger: #e06666;
+      --warn: #d9a441;
+      --warn-soft: #2a2416;
+      --pos: #6fca9f;
+      --neg: #e06666;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 28px rgba(0,0,0,.35);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  header.app {
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  header.app h1 {
+    font-size: 18px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    letter-spacing: -0.01em;
+  }
+  header.app .logo {
+    width: 26px; height: 26px; flex: 0 0 auto;
+  }
+  nav.tabs {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+    flex-wrap: wrap;
+  }
+  nav.tabs button {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    padding: 7px 13px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 550;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  nav.tabs button:hover { color: var(--ink); background: var(--panel-2); }
+  nav.tabs button.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+  main {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 22px 20px 80px;
+  }
+  .view { display: none; }
+  .view.active { display: block; animation: fade .18s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px 20px;
+    margin-bottom: 18px;
+  }
+  .card h2 { margin: 0 0 4px; font-size: 16px; letter-spacing: -0.01em; }
+  .card .sub { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .card > h2:first-child { margin-top: 0; }
+
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--muted); font-weight: 600; }
+  input, select {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel-2);
+    color: var(--ink);
+    min-width: 0;
+  }
+  input:focus, select:focus { outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 0; border-color: var(--accent); }
+  input::placeholder { color: color-mix(in srgb, var(--muted) 75%, transparent); }
+
+  button.btn {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--ink);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  button.btn:hover { border-color: var(--muted); }
+  button.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  button.btn.primary:hover { filter: brightness(1.05); }
+  button.btn.ghost { background: transparent; }
+  button.btn.danger { color: var(--danger); }
+  button.btn.danger:hover { border-color: var(--danger); }
+  button.btn.sm { padding: 5px 9px; font-size: 12.5px; }
+  button.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .table-wrap { overflow-x: auto; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 700; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--panel-2); }
+
+  .money { font-variant-numeric: tabular-nums; }
+  .pos { color: var(--pos); }
+  .neg { color: var(--neg); }
+  .muted { color: var(--muted); }
+  .pill {
+    display: inline-block; font-size: 11.5px; font-weight: 650;
+    padding: 2px 8px; border-radius: 999px;
+    background: var(--panel-2); border: 1px solid var(--line); color: var(--muted);
+  }
+  .pill.assigned { background: var(--accent-soft); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 25%, transparent); }
+  .pill.unassigned { background: var(--warn-soft); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 30%, transparent); }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .stat {
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px;
+  }
+  .stat .label { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .stat .value { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .stat.hero { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+  .stat.hero .value { color: var(--accent); font-size: 30px; }
+
+  .banner {
+    border-radius: 10px; padding: 11px 14px; font-size: 13.5px; margin-bottom: 14px;
+    display: flex; gap: 10px; align-items: center;
+  }
+  .banner.warn { background: var(--warn-soft); color: var(--warn); border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); }
+  .banner.info { background: var(--accent-soft); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); }
+  .empty { text-align: center; color: var(--muted); padding: 30px 10px; font-size: 14px; }
+
+  select.assign-sel { min-width: 150px; padding: 5px 8px; font-size: 13px; }
+
+  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .toolbar .spacer { flex: 1; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button { border: none; background: var(--panel); color: var(--muted); padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .seg button.active { background: var(--accent-soft); color: var(--accent); }
+
+  dialog {
+    border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: var(--ink);
+    padding: 0; max-width: 560px; width: calc(100% - 32px); box-shadow: var(--shadow);
+  }
+  dialog::backdrop { background: rgba(0,0,0,.45); }
+  dialog .dlg-head { padding: 16px 20px 0; }
+  dialog .dlg-head h3 { margin: 0; font-size: 16px; }
+  dialog .dlg-body { padding: 14px 20px; }
+  dialog .dlg-foot { padding: 12px 20px 18px; display: flex; gap: 8px; justify-content: flex-end; }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 999px;
+    font-size: 14px; font-weight: 600; opacity: 0; pointer-events: none; transition: .25s; z-index: 100;
+    box-shadow: var(--shadow);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .foot-note { color: var(--muted); font-size: 12px; text-align: center; margin-top: 30px; }
+  code.k { background: var(--panel-2); border: 1px solid var(--line); padding: 1px 5px; border-radius: 5px; font-size: 12.5px; }
+  a { color: var(--accent); }
+  .hidden { display: none !important; }
+  .env-color { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<header class="app">
+  <h1>
+    <svg class="logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3 7l9 6 9-6"/><rect x="3" y="5" width="18" height="14" rx="2"/>
+    </svg>
+    Envelope Budget
+  </h1>
+  <nav class="tabs" id="tabs">
+    <button data-view="payday" class="active">Payday</button>
+    <button data-view="envelopes">Envelopes</button>
+    <button data-view="expenses">Expenses</button>
+    <button data-view="history">History</button>
+    <button data-view="data">Backup</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ============ PAYDAY ============ -->
+  <section class="view active" id="view-payday">
+    <div class="card">
+      <h2>This payday</h2>
+      <p class="sub">Everything you've imported and assigned since your last payday. This is the cash to pull out, deposit, and use to pay the card.</p>
+      <div id="payday-warn"></div>
+      <div class="stat-grid" style="margin-bottom:16px;">
+        <div class="stat hero">
+          <div class="label" id="withdraw-label">Total to withdraw</div>
+          <div class="value" id="stat-withdraw">$0.00</div>
+        </div>
+        <div class="stat">
+          <div class="label">Spent this period</div>
+          <div class="value" id="stat-spent">$0.00</div>
+        </div>
+        <div class="stat">
+          <div class="label">Assigned</div>
+          <div class="value" id="stat-assigned-count">0</div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <span class="muted" style="font-size:13px;">Withdraw amount based on:</span>
+        <div class="seg" id="withdraw-mode">
+          <button data-mode="spent" class="active">What I spent</button>
+          <button data-mode="budget">Fund to budget</button>
+        </div>
+        <div class="spacer"></div>
+        <button class="btn primary" id="btn-settle">Record payday &amp; update balances</button>
+      </div>
+      <div class="table-wrap">
+        <table id="payday-table">
+          <thead>
+            <tr>
+              <th>Envelope</th>
+              <th class="num">Spent this period</th>
+              <th class="num">Per-payday budget</th>
+              <th class="num">Balance after</th>
+            </tr>
+          </thead>
+          <tbody id="payday-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ENVELOPES ============ -->
+  <section class="view" id="view-envelopes">
+    <div class="card">
+      <h2>Add an envelope</h2>
+      <p class="sub">A category you assign expenses to (Groceries, Gas, Car repair…). A per-payday budget is optional — use it for sinking funds where you set aside a fixed amount each payday.</p>
+      <div class="row">
+        <div class="field" style="flex:2;">
+          <label for="env-name">Name</label>
+          <input id="env-name" placeholder="Groceries" autocomplete="off">
+        </div>
+        <div class="field" style="flex:1;">
+          <label for="env-budget">Budget / payday (optional)</label>
+          <input id="env-budget" type="number" step="0.01" min="0" placeholder="0.00" inputmode="decimal">
+        </div>
+        <div class="field" style="flex:1;">
+          <label for="env-start">Starting balance</label>
+          <input id="env-start" type="number" step="0.01" placeholder="0.00" inputmode="decimal">
+        </div>
+        <button class="btn primary" id="btn-add-env">Add</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Balances</h2>
+      <p class="sub">Balance = money you've put in minus what's been spent. Sinking-fund envelopes grow; reimburse-exactly ones stay near zero.</p>
+      <div class="table-wrap">
+        <table id="env-table">
+          <thead>
+            <tr>
+              <th>Envelope</th>
+              <th class="num">Budget / payday</th>
+              <th class="num">Spent this period</th>
+              <th class="num">Balance</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="env-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ EXPENSES ============ -->
+  <section class="view" id="view-expenses">
+    <div class="card">
+      <h2>Import expenses</h2>
+      <p class="sub">Upload a CSV from your bank or credit card. You'll pick which columns are the date, description, and amount.</p>
+      <div class="row">
+        <input type="file" id="csv-file" accept=".csv,text/csv" style="padding:6px;">
+        <button class="btn" id="btn-add-manual">+ Add one manually</button>
+      </div>
+      <div id="import-config" class="hidden" style="margin-top:14px;">
+        <div class="row">
+          <div class="field"><label>Date column</label><select id="map-date"></select></div>
+          <div class="field"><label>Description column</label><select id="map-desc"></select></div>
+          <div class="field"><label>Amount column</label><select id="map-amount"></select></div>
+          <div class="field"><label>Charges are</label>
+            <select id="map-sign">
+              <option value="negative">Negative numbers</option>
+              <option value="positive">Positive numbers</option>
+            </select>
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px; align-items:center;">
+          <label style="font-size:13px; color:var(--muted); display:flex; gap:6px; align-items:center;">
+            <input type="checkbox" id="skip-credits" checked style="min-width:auto;"> Skip payments/credits (opposite sign)
+          </label>
+          <div class="spacer"></div>
+          <span class="muted" id="import-preview-count" style="font-size:13px;"></span>
+          <button class="btn primary" id="btn-do-import">Import</button>
+          <button class="btn ghost" id="btn-cancel-import">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Assign to envelopes</h2>
+      <p class="sub">Pick an envelope for each expense. Auto-assign uses keyword rules you build as you go.</p>
+      <div class="toolbar">
+        <div class="seg" id="exp-filter">
+          <button data-filter="unassigned" class="active">Needs assigning</button>
+          <button data-filter="period">This period</button>
+          <button data-filter="all">All</button>
+        </div>
+        <div class="spacer"></div>
+        <button class="btn sm" id="btn-auto-assign">Auto-assign by rules</button>
+        <button class="btn sm danger" id="btn-clear-settled">Clear settled</button>
+      </div>
+      <div class="table-wrap">
+        <table id="exp-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th class="num">Amount</th>
+              <th>Envelope</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="exp-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HISTORY ============ -->
+  <section class="view" id="view-history">
+    <div class="card">
+      <h2>Payday history</h2>
+      <p class="sub">Each time you record a payday, it's logged here.</p>
+      <div id="history-body"></div>
+    </div>
+  </section>
+
+  <!-- ============ DATA ============ -->
+  <section class="view" id="view-data">
+    <div class="card">
+      <h2>Backup &amp; restore</h2>
+      <p class="sub">Your data lives in this browser only. Export a backup file regularly so you never lose it — especially before clearing your browser.</p>
+      <div class="row">
+        <button class="btn primary" id="btn-export">Download backup (.json)</button>
+        <label class="btn" style="cursor:pointer;">Restore from backup<input type="file" id="import-file" accept=".json,application/json" class="hidden"></label>
+        <button class="btn" id="btn-sample">Load sample data</button>
+        <div class="spacer"></div>
+        <button class="btn danger" id="btn-reset">Erase everything</button>
+      </div>
+      <p class="foot-note" style="text-align:left; margin-top:16px;">
+        Tip: keep this file in a synced folder (iCloud, Dropbox, Google Drive) and open it from there so backups are easy to find.
+      </p>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<!-- fund dialog -->
+<dialog id="fund-dialog">
+  <form method="dialog">
+    <div class="dlg-head"><h3 id="fund-title">Add money</h3></div>
+    <div class="dlg-body">
+      <div class="field">
+        <label for="fund-amount">Amount to add to this envelope</label>
+        <input id="fund-amount" type="number" step="0.01" placeholder="0.00" inputmode="decimal" autofocus>
+      </div>
+      <p class="muted" style="font-size:12.5px; margin:10px 0 0;">Use a negative number to take money out.</p>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn ghost" value="cancel">Cancel</button>
+      <button class="btn primary" value="ok" id="fund-ok">Add</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- manual expense dialog -->
+<dialog id="expense-dialog">
+  <form method="dialog">
+    <div class="dlg-head"><h3>Add expense</h3></div>
+    <div class="dlg-body">
+      <div class="row">
+        <div class="field"><label for="m-date">Date</label><input id="m-date" type="date"></div>
+        <div class="field" style="flex:1;"><label for="m-desc">Description</label><input id="m-desc" placeholder="Store name" style="width:100%;"></div>
+        <div class="field"><label for="m-amount">Amount</label><input id="m-amount" type="number" step="0.01" placeholder="0.00" inputmode="decimal"></div>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn ghost" value="cancel">Cancel</button>
+      <button class="btn primary" value="ok" id="m-ok">Add</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+"use strict";
+(function () {
+  // ---------- storage ----------
+  const KEY = "envelope-budget-v1";
+  const PALETTE = ["#2f6f4f","#3d7ea6","#a6683d","#7a4fa6","#a63d6b","#4fa68f","#a69a3d","#5c6773"];
+
+  const blank = () => ({ envelopes: [], expenses: [], rules: [], settlements: [], nextId: 1 });
+  let state = load();
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return blank();
+      const s = JSON.parse(raw);
+      if (!s.envelopes || !s.expenses) return blank();
+      s.rules = s.rules || [];
+      s.settlements = s.settlements || [];
+      s.nextId = s.nextId || 1;
+      return s;
+    } catch (e) { return blank(); }
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); }
+    catch (e) { toast("Could not save — storage may be full"); }
+  }
+  const id = () => state.nextId++;
+
+  // ---------- money (integer cents) ----------
+  const toC = (v) => Math.round((Number(v) || 0) * 100);
+  const fromC = (c) => (c / 100);
+  function fmt(c) {
+    const n = fromC(c);
+    const s = Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return (n < 0 ? "-$" : "$") + s;
+  }
+  function moneyEl(c, colorize) {
+    const span = document.createElement("span");
+    span.className = "money" + (colorize ? (c < 0 ? " neg" : c > 0 ? " pos" : "") : "");
+    span.textContent = fmt(c);
+    return span;
+  }
+
+  // ---------- helpers ----------
+  const envById = (eid) => state.envelopes.find(e => e.id === eid) || null;
+  const isUnsettled = (x) => !x.settled;
+  const periodExpenses = () => state.expenses.filter(isUnsettled);
+  const assignedPeriod = () => periodExpenses().filter(x => x.envelopeId != null);
+  const unassigned = () => state.expenses.filter(x => x.envelopeId == null && isUnsettled(x));
+
+  function spentThisPeriod(eid) {
+    return assignedPeriod().filter(x => x.envelopeId === eid).reduce((s, x) => s + x.amountC, 0);
+  }
+  function esc(s) { const d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; }
+
+  let toastTimer;
+  function toast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+  }
+
+  // ---------- rendering ----------
+  function renderAll() { renderPayday(); renderEnvelopes(); renderExpenses(); renderHistory(); save(); }
+
+  let withdrawMode = "spent";
+
+  function renderPayday() {
+    const envs = state.envelopes;
+    const spentTotal = assignedPeriod().reduce((s, x) => s + x.amountC, 0);
+    const budgetTotal = envs.reduce((s, e) => s + (spentThisPeriod(e.id) > 0 || e.budgetC > 0 ? e.budgetC : 0), 0);
+    const withdraw = withdrawMode === "spent" ? spentTotal : budgetTotal;
+
+    document.getElementById("stat-withdraw").textContent = fmt(withdraw);
+    document.getElementById("stat-spent").textContent = fmt(spentTotal);
+    document.getElementById("stat-assigned-count").textContent = String(assignedPeriod().length);
+    document.getElementById("withdraw-label").textContent =
+      withdrawMode === "spent" ? "Total to withdraw (cover spending)" : "Total to withdraw (fund to budget)";
+
+    // warnings
+    const warn = document.getElementById("payday-warn");
+    warn.innerHTML = "";
+    const un = unassigned();
+    if (un.length) {
+      const b = document.createElement("div");
+      b.className = "banner warn";
+      b.innerHTML = "&#9888; " + un.length + " expense" + (un.length > 1 ? "s" : "") +
+        " still need assigning (" + fmt(un.reduce((s, x) => s + x.amountC, 0)) +
+        "). <a href='#' id='goto-assign'>Assign now</a>";
+      warn.appendChild(b);
+      b.querySelector("#goto-assign").addEventListener("click", (e) => { e.preventDefault(); showView("expenses"); });
+    }
+
+    const body = document.getElementById("payday-body");
+    body.innerHTML = "";
+    const active = envs.filter(e => spentThisPeriod(e.id) !== 0 || e.budgetC > 0);
+    if (!active.length) {
+      body.innerHTML = "<tr><td colspan='4' class='empty'>Nothing to show yet. Import expenses and assign them to envelopes.</td></tr>";
+    } else {
+      active.forEach(e => {
+        const spent = spentThisPeriod(e.id);
+        const funded = withdrawMode === "budget" ? e.budgetC : spent;
+        const after = e.balanceC + funded - spent;
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          "<td><span class='env-color' style='background:" + e.color + "'></span>" + esc(e.name) + "</td>" +
+          "<td class='num'>" + fmt(spent) + "</td>" +
+          "<td class='num muted'>" + (e.budgetC ? fmt(e.budgetC) : "—") + "</td>" +
+          "<td class='num'></td>";
+        tr.children[3].appendChild(moneyEl(after, true));
+        body.appendChild(tr);
+      });
+    }
+    document.getElementById("btn-settle").disabled = assignedPeriod().length === 0;
+  }
+
+  function renderEnvelopes() {
+    const body = document.getElementById("env-body");
+    body.innerHTML = "";
+    if (!state.envelopes.length) {
+      body.innerHTML = "<tr><td colspan='5' class='empty'>No envelopes yet. Add one above.</td></tr>";
+      return;
+    }
+    state.envelopes.forEach(e => {
+      const spent = spentThisPeriod(e.id);
+      const tr = document.createElement("tr");
+      tr.innerHTML =
+        "<td><span class='env-color' style='background:" + e.color + "'></span>" + esc(e.name) + "</td>" +
+        "<td class='num muted'>" + (e.budgetC ? fmt(e.budgetC) : "—") + "</td>" +
+        "<td class='num'>" + fmt(spent) + "</td>" +
+        "<td class='num'></td>" +
+        "<td class='num'></td>";
+      tr.children[3].appendChild(moneyEl(e.balanceC, true));
+      const actions = tr.children[4];
+      const fund = mkBtn("Fund", "btn sm", () => openFund(e.id));
+      const del = mkBtn("Delete", "btn sm danger", () => deleteEnvelope(e.id));
+      actions.style.whiteSpace = "nowrap";
+      actions.append(fund, document.createTextNode(" "), del);
+      body.appendChild(tr);
+    });
+  }
+
+  let expFilter = "unassigned";
+  function renderExpenses() {
+    const body = document.getElementById("exp-body");
+    body.innerHTML = "";
+    let list;
+    if (expFilter === "unassigned") list = unassigned();
+    else if (expFilter === "period") list = periodExpenses();
+    else list = state.expenses.slice();
+    list = list.slice().sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.id - a.id));
+
+    if (!list.length) {
+      body.innerHTML = "<tr><td colspan='5' class='empty'>No expenses here.</td></tr>";
+      return;
+    }
+    list.forEach(x => {
+      const tr = document.createElement("tr");
+      if (x.settled) tr.style.opacity = ".55";
+      const sel = document.createElement("select");
+      sel.className = "assign-sel";
+      sel.innerHTML = "<option value=''>— unassigned —</option>" +
+        state.envelopes.map(e => "<option value='" + e.id + "'>" + esc(e.name) + "</option>").join("");
+      sel.value = x.envelopeId != null ? String(x.envelopeId) : "";
+      sel.disabled = !!x.settled;
+      sel.addEventListener("change", () => assignExpense(x.id, sel.value ? Number(sel.value) : null, true));
+
+      tr.innerHTML =
+        "<td class='muted' style='white-space:nowrap'>" + esc(x.date) + "</td>" +
+        "<td>" + esc(x.desc) + (x.settled ? " <span class='pill'>settled</span>" : "") + "</td>" +
+        "<td class='num'>" + fmt(x.amountC) + "</td>" +
+        "<td></td>" +
+        "<td></td>";
+      tr.children[3].appendChild(sel);
+      const del = mkBtn("✕", "btn sm ghost", () => deleteExpense(x.id));
+      del.title = "Delete";
+      tr.children[4].appendChild(del);
+      body.appendChild(tr);
+    });
+  }
+
+  function renderHistory() {
+    const wrap = document.getElementById("history-body");
+    wrap.innerHTML = "";
+    if (!state.settlements.length) {
+      wrap.innerHTML = "<div class='empty'>No paydays recorded yet.</div>";
+      return;
+    }
+    state.settlements.slice().reverse().forEach(s => {
+      const div = document.createElement("div");
+      div.className = "stat";
+      div.style.marginBottom = "10px";
+      const lines = Object.entries(s.byEnvelope)
+        .map(([name, c]) => "<div style='display:flex;justify-content:space-between;font-size:13px;'><span class='muted'>" + esc(name) + "</span><span class='money'>" + fmt(c) + "</span></div>")
+        .join("");
+      div.innerHTML =
+        "<div style='display:flex;justify-content:space-between;align-items:baseline;'>" +
+          "<strong>" + esc(s.date) + "</strong>" +
+          "<span class='value' style='font-size:20px;'>" + fmt(s.total) + "</span>" +
+        "</div>" +
+        "<div style='margin-top:8px;'>" + lines + "</div>";
+      wrap.appendChild(div);
+    });
+  }
+
+  function mkBtn(label, cls, fn) {
+    const b = document.createElement("button");
+    b.className = cls; b.textContent = label; b.type = "button";
+    b.addEventListener("click", fn);
+    return b;
+  }
+
+  // ---------- actions ----------
+  function addEnvelope() {
+    const name = document.getElementById("env-name").value.trim();
+    if (!name) { toast("Enter a name"); return; }
+    if (state.envelopes.some(e => e.name.toLowerCase() === name.toLowerCase())) { toast("That envelope already exists"); return; }
+    const budgetC = toC(document.getElementById("env-budget").value);
+    const startC = toC(document.getElementById("env-start").value);
+    state.envelopes.push({
+      id: id(), name, budgetC, balanceC: startC,
+      color: PALETTE[state.envelopes.length % PALETTE.length]
+    });
+    document.getElementById("env-name").value = "";
+    document.getElementById("env-budget").value = "";
+    document.getElementById("env-start").value = "";
+    toast("Added " + name);
+    renderAll();
+  }
+
+  function deleteEnvelope(eid) {
+    const e = envById(eid);
+    if (!e) return;
+    const used = state.expenses.some(x => x.envelopeId === eid);
+    if (used && !confirm("Expenses are assigned to \"" + e.name + "\". Delete it and unassign them?")) return;
+    state.expenses.forEach(x => { if (x.envelopeId === eid) x.envelopeId = null; });
+    state.rules = state.rules.filter(r => r.envelopeId !== eid);
+    state.envelopes = state.envelopes.filter(x => x.id !== eid);
+    renderAll();
+  }
+
+  let fundTargetId = null;
+  function openFund(eid) {
+    const e = envById(eid);
+    if (!e) return;
+    fundTargetId = eid;
+    document.getElementById("fund-title").textContent = "Add money to " + e.name;
+    document.getElementById("fund-amount").value = "";
+    document.getElementById("fund-dialog").showModal();
+  }
+
+  function assignExpense(xid, eid, makeRuleOffer) {
+    const x = state.expenses.find(e => e.id === xid);
+    if (!x || x.settled) return;
+    x.envelopeId = eid;
+    // offer to remember a rule from the first word(s) of the description
+    if (makeRuleOffer && eid != null) {
+      const kw = keywordFrom(x.desc);
+      if (kw && !state.rules.some(r => r.keyword === kw && r.envelopeId === eid)) {
+        const env = envById(eid);
+        if (env && confirm("Always assign expenses matching \"" + kw + "\" to " + env.name + "?")) {
+          state.rules.push({ keyword: kw, envelopeId: eid });
+        }
+      }
+    }
+    renderAll();
+  }
+
+  function keywordFrom(desc) {
+    if (!desc) return "";
+    const clean = desc.toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+    const stop = new Set(["the", "and", "of", "inc", "llc", "co", "com", "purchase", "debit", "card", "pos"]);
+    const words = clean.split(" ").filter(w => w.length >= 3 && !stop.has(w) && !/^\d+$/.test(w));
+    return words.slice(0, 2).join(" ");
+  }
+
+  function autoAssign() {
+    let n = 0;
+    unassigned().forEach(x => {
+      const d = (x.desc || "").toLowerCase();
+      const rule = state.rules.find(r => d.includes(r.keyword));
+      if (rule && envById(rule.envelopeId)) { x.envelopeId = rule.envelopeId; n++; }
+    });
+    toast(n ? "Auto-assigned " + n + " expense" + (n > 1 ? "s" : "") : "No matching rules");
+    renderAll();
+  }
+
+  function deleteExpense(xid) {
+    state.expenses = state.expenses.filter(x => x.id !== xid);
+    renderAll();
+  }
+
+  function clearSettled() {
+    const n = state.expenses.filter(x => x.settled).length;
+    if (!n) { toast("Nothing settled to clear"); return; }
+    if (!confirm("Remove " + n + " settled expense" + (n > 1 ? "s" : "") + " from the list? (Balances and history are unaffected.)")) return;
+    state.expenses = state.expenses.filter(x => !x.settled);
+    renderAll();
+  }
+
+  function settle() {
+    const items = assignedPeriod();
+    if (!items.length) { toast("Nothing assigned to record"); return; }
+    const un = unassigned();
+    if (un.length && !confirm(un.length + " expense(s) are still unassigned and won't be included. Record payday anyway?")) return;
+
+    const byEnvelope = {};
+    const active = state.envelopes.filter(e => spentThisPeriod(e.id) !== 0 || e.budgetC > 0);
+    let total = 0;
+    active.forEach(e => {
+      const spent = spentThisPeriod(e.id);
+      const funded = withdrawMode === "budget" ? e.budgetC : spent;
+      e.balanceC = e.balanceC + funded - spent;
+      total += funded;
+      if (funded !== 0 || spent !== 0) byEnvelope[e.name] = funded;
+    });
+    items.forEach(x => { x.settled = true; });
+
+    const today = new Date();
+    const dateStr = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
+    state.settlements.push({ date: dateStr, total, mode: withdrawMode, byEnvelope });
+
+    toast("Payday recorded — withdraw " + fmt(total));
+    renderAll();
+    showView("history");
+  }
+
+  // ---------- CSV import ----------
+  let parsedRows = null, parsedHeader = null;
+
+  function parseCSV(text) {
+    // RFC-4180-ish parser: handles quotes, commas & newlines in quoted fields.
+    const rows = [];
+    let field = "", row = [], i = 0, inQ = false;
+    text = text.replace(/^﻿/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    while (i < text.length) {
+      const c = text[i];
+      if (inQ) {
+        if (c === '"') {
+          if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+          inQ = false; i++; continue;
+        }
+        field += c; i++; continue;
+      }
+      if (c === '"') { inQ = true; i++; continue; }
+      if (c === ",") { row.push(field); field = ""; i++; continue; }
+      if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; i++; continue; }
+      field += c; i++;
+    }
+    if (field.length || row.length) { row.push(field); rows.push(row); }
+    return rows.filter(r => r.length && r.some(v => v.trim() !== ""));
+  }
+
+  function onFile(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const rows = parseCSV(String(reader.result));
+      if (rows.length < 2) { toast("That CSV looks empty"); return; }
+      parsedHeader = rows[0].map(h => h.trim());
+      parsedRows = rows.slice(1);
+      setupMapping();
+      document.getElementById("import-config").classList.remove("hidden");
+    };
+    reader.readAsText(file);
+  }
+
+  function guess(cols, patterns) {
+    for (let i = 0; i < cols.length; i++) {
+      const c = cols[i].toLowerCase();
+      if (patterns.some(p => c.includes(p))) return i;
+    }
+    return -1;
+  }
+
+  function setupMapping() {
+    const opts = parsedHeader.map((h, i) => "<option value='" + i + "'>" + esc(h || ("Column " + (i + 1))) + "</option>").join("");
+    ["map-date", "map-desc", "map-amount"].forEach(mid => { document.getElementById(mid).innerHTML = opts; });
+    const di = guess(parsedHeader, ["date", "posted", "trans"]);
+    const de = guess(parsedHeader, ["desc", "name", "memo", "payee", "merchant", "detail"]);
+    const am = guess(parsedHeader, ["amount", "debit", "charge", "value"]);
+    if (di >= 0) document.getElementById("map-date").value = di;
+    if (de >= 0) document.getElementById("map-desc").value = de;
+    if (am >= 0) document.getElementById("map-amount").value = am;
+    updatePreviewCount();
+  }
+
+  function buildImport() {
+    const di = Number(document.getElementById("map-date").value);
+    const de = Number(document.getElementById("map-desc").value);
+    const am = Number(document.getElementById("map-amount").value);
+    const chargesNeg = document.getElementById("map-sign").value === "negative";
+    const skipCredits = document.getElementById("skip-credits").checked;
+    const out = [];
+    parsedRows.forEach(r => {
+      const rawAmt = (r[am] || "").replace(/[$,\s]/g, "").replace(/[()]/g, m => m === "(" ? "-" : "");
+      let val = parseFloat(rawAmt);
+      if (isNaN(val)) return;
+      // outflow magnitude, respecting sign convention
+      let expense; // positive = money spent
+      if (chargesNeg) expense = -val; else expense = val;
+      if (expense <= 0) { if (skipCredits) return; expense = Math.abs(expense); }
+      out.push({
+        date: normDate(r[di]),
+        desc: (r[de] || "").trim(),
+        amountC: toC(expense)
+      });
+    });
+    return out;
+  }
+
+  function normDate(s) {
+    s = (s || "").trim();
+    if (!s) return "";
+    // already ISO
+    let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return m[1] + "-" + m[2] + "-" + m[3];
+    // M/D/Y or M-D-Y
+    m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+    if (m) {
+      let [_, mo, d, y] = m;
+      if (y.length === 2) y = "20" + y;
+      return y + "-" + mo.padStart(2, "0") + "-" + d.padStart(2, "0");
+    }
+    const dt = new Date(s);
+    if (!isNaN(dt)) return dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
+    return s;
+  }
+
+  function updatePreviewCount() {
+    if (!parsedRows) return;
+    const n = buildImport().length;
+    document.getElementById("import-preview-count").textContent = n + " expense" + (n === 1 ? "" : "s") + " to import";
+  }
+
+  function doImport() {
+    const rows = buildImport();
+    if (!rows.length) { toast("No expenses matched — check your column and sign settings"); return; }
+    // dedupe against existing (date+desc+amount)
+    const seen = new Set(state.expenses.map(x => x.date + "|" + x.desc + "|" + x.amountC));
+    let added = 0, dupes = 0;
+    rows.forEach(r => {
+      const k = r.date + "|" + r.desc + "|" + r.amountC;
+      if (seen.has(k)) { dupes++; return; }
+      seen.add(k);
+      state.expenses.push({ id: id(), date: r.date, desc: r.desc, amountC: r.amountC, envelopeId: null, settled: false });
+      added++;
+    });
+    // apply rules automatically
+    autoAssignSilent();
+    cancelImport();
+    expFilter = "unassigned";
+    document.querySelectorAll("#exp-filter button").forEach(b => b.classList.toggle("active", b.dataset.filter === "unassigned"));
+    renderAll();
+    toast("Imported " + added + (dupes ? " · skipped " + dupes + " duplicate" + (dupes > 1 ? "s" : "") : ""));
+  }
+
+  function autoAssignSilent() {
+    unassigned().forEach(x => {
+      const d = (x.desc || "").toLowerCase();
+      const rule = state.rules.find(r => d.includes(r.keyword));
+      if (rule && envById(rule.envelopeId)) x.envelopeId = rule.envelopeId;
+    });
+  }
+
+  function cancelImport() {
+    parsedRows = null; parsedHeader = null;
+    document.getElementById("import-config").classList.add("hidden");
+    document.getElementById("csv-file").value = "";
+  }
+
+  // ---------- backup ----------
+  function exportData() {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const d = new Date();
+    a.href = url;
+    a.download = "envelope-budget-" + d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0") + ".json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importData(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const s = JSON.parse(String(reader.result));
+        if (!s.envelopes || !s.expenses) throw new Error("bad");
+        state = s;
+        state.rules = state.rules || [];
+        state.settlements = state.settlements || [];
+        state.nextId = state.nextId || (Math.max(0, ...state.envelopes.map(e => e.id), ...state.expenses.map(x => x.id)) + 1);
+        renderAll();
+        toast("Backup restored");
+      } catch (e) { toast("That doesn't look like a valid backup file"); }
+    };
+    reader.readAsText(file);
+  }
+
+  function loadSample() {
+    if (state.envelopes.length || state.expenses.length) {
+      if (!confirm("This replaces your current data with sample data. Continue?")) return;
+    }
+    state = blank();
+    const mk = (name, budget, bal) => { const e = { id: id(), name, budgetC: toC(budget), balanceC: toC(bal), color: PALETTE[state.envelopes.length % PALETTE.length] }; state.envelopes.push(e); return e.id; };
+    const gro = mk("Groceries", 400, 0);
+    const gas = mk("Gas", 120, 0);
+    const eat = mk("Eating out", 150, 0);
+    const car = mk("Car repair", 100, 340);
+    const ex = (date, desc, amt, eid) => state.expenses.push({ id: id(), date, desc, amountC: toC(amt), envelopeId: eid, settled: false });
+    ex("2026-07-10", "SAFEWAY #1042", 84.32, gro);
+    ex("2026-07-11", "SHELL OIL 57", 41.10, gas);
+    ex("2026-07-12", "CHIPOTLE 2201", 23.85, eat);
+    ex("2026-07-14", "TRADER JOES", 61.47, gro);
+    ex("2026-07-16", "SHELL OIL 57", 38.90, gas);
+    ex("2026-07-18", "SAFEWAY #1042", 52.03, gro);
+    ex("2026-07-19", "PIZZA HUT", 29.40, null);
+    state.rules.push({ keyword: "safeway", envelopeId: gro });
+    state.rules.push({ keyword: "shell oil", envelopeId: gas });
+    renderAll();
+    showView("payday");
+    toast("Sample data loaded");
+  }
+
+  function resetAll() {
+    if (!confirm("Erase all envelopes, expenses, and history? Export a backup first if you're not sure.")) return;
+    state = blank(); renderAll(); toast("Erased");
+  }
+
+  // ---------- navigation ----------
+  function showView(name) {
+    document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === "view-" + name));
+    document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("active", b.dataset.view === name));
+  }
+
+  // ---------- wire up ----------
+  document.getElementById("tabs").addEventListener("click", e => {
+    const btn = e.target.closest("button[data-view]");
+    if (btn) showView(btn.dataset.view);
+  });
+  document.getElementById("btn-add-env").addEventListener("click", addEnvelope);
+  document.getElementById("env-name").addEventListener("keydown", e => { if (e.key === "Enter") addEnvelope(); });
+
+  document.getElementById("withdraw-mode").addEventListener("click", e => {
+    const b = e.target.closest("button[data-mode]");
+    if (!b) return;
+    withdrawMode = b.dataset.mode;
+    document.querySelectorAll("#withdraw-mode button").forEach(x => x.classList.toggle("active", x === b));
+    renderPayday();
+  });
+  document.getElementById("btn-settle").addEventListener("click", settle);
+
+  document.getElementById("exp-filter").addEventListener("click", e => {
+    const b = e.target.closest("button[data-filter]");
+    if (!b) return;
+    expFilter = b.dataset.filter;
+    document.querySelectorAll("#exp-filter button").forEach(x => x.classList.toggle("active", x === b));
+    renderExpenses();
+  });
+  document.getElementById("btn-auto-assign").addEventListener("click", autoAssign);
+  document.getElementById("btn-clear-settled").addEventListener("click", clearSettled);
+
+  document.getElementById("csv-file").addEventListener("change", e => { if (e.target.files[0]) onFile(e.target.files[0]); });
+  ["map-date", "map-desc", "map-amount", "map-sign", "skip-credits"].forEach(mid =>
+    document.getElementById(mid).addEventListener("change", updatePreviewCount));
+  document.getElementById("btn-do-import").addEventListener("click", doImport);
+  document.getElementById("btn-cancel-import").addEventListener("click", cancelImport);
+
+  // fund dialog
+  document.getElementById("fund-dialog").addEventListener("close", function () {
+    if (this.returnValue !== "ok") return;
+    const e = envById(fundTargetId);
+    if (!e) return;
+    const amt = toC(document.getElementById("fund-amount").value);
+    if (amt === 0) return;
+    e.balanceC += amt;
+    toast((amt > 0 ? "Added " : "Removed ") + fmt(Math.abs(amt)));
+    renderAll();
+  });
+
+  // manual expense
+  document.getElementById("btn-add-manual").addEventListener("click", () => {
+    const today = new Date();
+    document.getElementById("m-date").value = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
+    document.getElementById("m-desc").value = "";
+    document.getElementById("m-amount").value = "";
+    document.getElementById("expense-dialog").showModal();
+  });
+  document.getElementById("expense-dialog").addEventListener("close", function () {
+    if (this.returnValue !== "ok") return;
+    const date = document.getElementById("m-date").value || "";
+    const desc = document.getElementById("m-desc").value.trim();
+    const amountC = toC(document.getElementById("m-amount").value);
+    if (!desc || amountC === 0) { toast("Enter a description and amount"); return; }
+    state.expenses.push({ id: id(), date, desc, amountC: Math.abs(amountC), envelopeId: null, settled: false });
+    autoAssignSilent();
+    renderAll();
+    toast("Expense added");
+  });
+
+  document.getElementById("btn-export").addEventListener("click", exportData);
+  document.getElementById("import-file").addEventListener("change", e => { if (e.target.files[0]) importData(e.target.files[0]); });
+  document.getElementById("btn-sample").addEventListener("click", loadSample);
+  document.getElementById("btn-reset").addEventListener("click", resetAll);
+
+  renderAll();
+})();
+</script>
+</body>
+</html>

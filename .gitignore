@@ -1,0 +1,9 @@
+# Personal financial data — never commit real backups
+envelope-budget-*.json
+budget.json
+*.local.json
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
